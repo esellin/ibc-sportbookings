@@ -2,59 +2,60 @@
 require('dotenv').config();
 import { launch } from 'puppeteer';
 
-const sleep = ms => new Promise(resolve => {
+const sleep = (ms: number) => new Promise(resolve => {
   setTimeout(resolve, ms);
 });
 
 (async () => {
 
   const browser = await launch({
-    headless: true,
+    headless: false,
   });
   const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 960 });
+  await page.setViewport({ width: 800, height: 600 });
 
   // Go to login page
-  await page.goto('https://sportbookings.ipswich.gov.uk/');
-  await page.click('input.button#logOn');
-  await sleep(2000);
+  await page.goto('https://sportbookings.ipswich.gov.uk/myipswichfit/en/public');
+  await sleep(5000);
+
+  // Accept cookies
+  await page.click('button.xn-cta');
+  await sleep(5000);
+
+  // Click "Login to your account" button
+  await page.click('a#xn-account-login-link');
+  await sleep(5000);
 
   // Fill in login form
-  await page.type('input#UserName', process.env.USERNAME);
-  await page.type('input#Password', process.env.PASSWORD);
-  await page.click('div.inputForm input[value="Log on"]');
-
-  // Open booking form, select "Fore Street Pool" and submit
-  await page.waitForSelector('a.ibc-booking-search-title');
-  await page.click('a.ibc-booking-search-title');
-  await page.waitForSelector('#SiteID');
-  await page.select('#SiteID', '2');
-  await page.waitForSelector('div#SearchCriteriaFooter input[value="Search"]');
-  await sleep(2000);
-  await page.click('div#SearchCriteriaFooter input[value="Search"]');
-  await sleep(2000);
-
-  // Click on "Next week >>"
-  await page.waitForSelector('ul#SearchDateControl');
-  await page.click('ul#SearchDateControl li:last-of-type a');
-  await sleep(10000);
-
-  // Click on 2nd available slot
-  await page.waitForSelector('table.ActivitySearchResults');
-  await sleep(5000);
-  const anchors = await page.$$('a.sr_AddToBasket')
-  await anchors[1].click();
+  await page.type('input#xn-Username', process.env.USERNAME);
+  await page.type('input#xn-Password', process.env.PASSWORD);
+  await page.click('button#login.xn-cta');
   await sleep(5000);
 
-  // Accept terms and submit
-  await page.waitForSelector('input#CheckoutSubmit');
-  await page.click('input[name="TermsAccepted"]');
-  await page.click('input#CheckoutSubmit');
+  // Click "Make a Booking" button
+  await page.click('a#xn-online-booking-link');
   await sleep(5000);
 
-  // Confirm booking
-  await page.waitForSelector('p.CheckoutFoCLink');
-  await page.click('p.CheckoutFoCLink a');
+  // Open calendar
+  await page.click('li.calendar');
+  await sleep(5000);
+  // await page.click('span.next-month');
+  // await sleep(5000);
+
+  // Click on target day
+  const targetDay = `${new Date().getDate() + 7}`;
+  await page.evaluate(
+    targetDay => {
+      (Array.from(document.querySelectorAll('span.day-number')).find(
+        element => element.textContent === targetDay
+      ) as HTMLElement).click()
+    }, targetDay);
+  await sleep(5000);
+
+  // Quick book
+  await page.click('xn-card-component:first-of-type button.xn-cta');
+  await sleep(5000);
+  await page.click('div#xn-book-now-confirm button.xn-cta');
   await sleep(5000);
 
   // Close browser
