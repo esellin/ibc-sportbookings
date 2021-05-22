@@ -39,17 +39,25 @@ const sleep = (ms: number) => new Promise(resolve => {
   // Open calendar
   await page.click('li.calendar');
   await sleep(5000);
-  // await page.click('span.next-month');
-  // await sleep(5000);
+
+  // Go to next month if required
+  const now = new Date().getTime();
+  const currentDay = new Date(now).getDate();
+  const targetDay = new Date(now + 86400000 * 7).getDate();
+  if (targetDay < currentDay) {
+    await page.click('span.next-month');
+    await sleep(5000);
+  } // end if
 
   // Click on target day
-  const targetDay = `${new Date().getDate() + 7}`;
-  await page.evaluate(
-    targetDay => {
-      (Array.from(document.querySelectorAll('span.day-number')).find(
-        element => element.textContent === targetDay
-      ) as HTMLElement).click()
-    }, targetDay);
+  const calendarDays = await page.$$('td.calendar-day:not(.disabled)');
+  for (const calendarDay of calendarDays) {
+    const text = await page.evaluate(calendarDay => calendarDay.innerText, calendarDay);
+    if (text == targetDay) {
+      await calendarDay.click();
+      break;
+    }
+  } // end for
   await sleep(5000);
 
   // Quick book
